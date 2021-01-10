@@ -44,56 +44,70 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+//import { Component, Vue } from 'vue-property-decorator';
 import userRowComponent, { User } from '@/components/UserRow.vue';
+import {
+  defineComponent,
+  reactive,
+  toRefs,
+  computed,
+} from '@vue/composition-api';
 
-@Component({
-  // componentsオプション: Componentsデコレータのオプションパラメータとして定義
+export default defineComponent({
   components: {
     'user-row': userRowComponent,
   },
-})
-export default class EditComponent extends Vue {
-  // dataオプション: クラス変数としてprivateで定義
-  private users: User[] = [];
-  private nickname = '';
-  private email = '';
-  private nicknameFilter = '';
+  // setup: function() { の省略記法
+  setup() {
+    /**
+     * refは、プリミティブな(Objectでない)値をリアクティブにする
+     * reactiveはObjectの値をリアクティブにする
+     * reactiveに含まれる一部のプロパティの値をリアクティブにしたい場合、toRefs()を使用する
+     */
+    const state = reactive({
+      users: [] as User[],
+      nickname: '',
+      email: '',
+      nicknameFilter: '',
+      filteredUsers: computed((): User[] => {
+        return state.users.filter(user =>
+          user.nickname.includes(state.nicknameFilter),
+        );
+      }),
+    });
+    const saveUser = () => {
+      // 登録したユーザーをメモリに保持
+      const user: User = {
+        nickname: state.nickname,
+        email: state.email,
+      };
+      state.users.push(user);
 
-  // computedオプションはクラスのgetterとして定義
-  public get filteredUsers() {
-    return this.users.filter(user =>
-      user.nickname.includes(this.nicknameFilter),
-    );
-  }
-
-  // methodsオプション: 同様にクラスメソッドとしてprivateで定義
-  private saveUser() {
-    // 登録したユーザーをメモリに保持
-    const user: User = {
-      nickname: this.nickname,
-      email: this.email,
+      // ブラウザ標準のダイアログで登録内容を表示
+      alert(
+        'ニックネーム: ' +
+          state.nickname +
+          '、メールアドレス: ' +
+          state.email +
+          'で登録しました。',
+      );
     };
-    this.users.push(user);
 
-    // ブラウザ標準のダイアログで登録内容を表示
-    alert(
-      'ニックネーム: ' +
-        this.nickname +
-        '、メールアドレス: ' +
-        this.email +
-        'で登録しました。',
-    );
-  }
+    const displayUsers = () => {
+      let message = state.users.length + ' 人のユーザーが登録されています。';
+      for (const user of state.users) {
+        message += '\n' + user.nickname;
+      }
+      alert(message);
+    };
 
-  private displayUsers = () => {
-    let message = this.users.length + ' 人のユーザーが登録されています。';
-    for (const user of this.users) {
-      message += '\n' + user.nickname;
-    }
-    alert(message);
-  };
-}
+    return {
+      ...toRefs(state), // toRefs関数: reactive関数で定義したstateのプロパティ1つ1つをref関数で定義したのと同じ状態にする
+      saveUser,
+      displayUsers,
+    };
+  },
+});
 </script>
 
 <style module lang="scss">

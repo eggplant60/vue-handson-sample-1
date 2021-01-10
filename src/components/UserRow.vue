@@ -14,8 +14,7 @@
 </template>
 
 <script lang="ts">
-//import Vue from 'vue';
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent, ref, nextTick, PropType } from '@vue/composition-api';
 
 export interface User {
   nickname: string;
@@ -29,25 +28,33 @@ const userValidator = (user: User) => {
   return true;
 };
 
-@Component
-export default class UserRowComponent extends Vue {
-  // propsオプション: `@Prop()`アノテーションをつけてprivateで宣言
-  //@Prop({ required: true, validator: userValidator })
-  @Prop({ required: true })
-  private user!: User;
-
-  // dataオプション: クラス変数としてprivateで定義
-  private editable = false;
-
-  // methodsオプション: 同様にクラスメソッドとしてprivateで定義
-  private edit() {
-    this.editable = true;
-    this.$nextTick(() => {
-      // DOM更新後に実行
-      (this.$refs.editNickname as HTMLFormElement).focus();
-    });
+export default defineComponent({
+  props: {
+    user: {
+      type: Object as PropType<User>, // point
+      required: true,
+    },
+  },
+  // リアクティブな変数は setup() 内で定義
+  setup() {
+    const editable = ref(false);
+    const editNickname = ref<HTMLFormElement | null>(null); // point
+    const edit = () => {
+      editable.value = true;
+      nextTick(() => {
+        // DOM更新後に実行
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        editNickname.value!.focus(); // !はnon nullであることをコンパイラに伝える
+      });
+    };
+    // テンプレートからアクセスする変数、関数はリターンすること
+    return {
+      editable,
+      editNickname,
+      edit,
+    };
   }
-}
+});
 </script>
 
 <style scoped>
